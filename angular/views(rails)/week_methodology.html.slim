@@ -1,0 +1,94 @@
+- content_for :head do
+  = javascript_include_tag "angular/apps/week_methodology"
+css:
+  #ui-datepicker-div { display: none; }
+= render partial: 'tabs', locals: {current: :week_methodology}
+
+.hidden
+  = form_tag week_methodology_reports_path(format: :xls)
+    = hidden_field_tag 'date_range'
+    = submit_tag 'export', id: 'export-methodology'
+
+.tab-content
+  = render partial: 'methodology_tabs', locals: {current: :week_methodology}
+
+  .tab-content ng-app='FeedMG'
+    #day_vs_week_summary_reports.tab-pane.fade.active.in ng-controller='WeekMethodologyCtrl'
+      form.form-inline
+        .form-group
+          label for='period'
+            | Period:
+
+          input.hide type="text" class="form-control" ng-model="params.period" ui-date='dateOptions()'
+          input id='period' type="text" class="form-control" readonly='true' ng-model="params.period"
+        br
+        button.btn ng-disabled='isNotFilled() || ajaxProcessing' ng-click='buildReport()' Submit
+        span.separator
+        button.btn#export ng-disabled='isNotFilled() || ajaxProcessing' Export
+
+      #exportable.table-container style='position: relative;'
+        .spinner-container ng-show='ajaxProcessing'
+          .spinner
+        table.display.table.table-bordered.valign.dataTable role="grid" style=("table-layout: fixed;") width="100%" ng-show='data.length'
+          thead#table-header
+            tr role="row"
+              th
+                | {{params.target.titleize()}}
+              th ng-repeat="day in days"
+                | {{day}}
+              th
+              th
+            tr
+              th Date
+              th ng-repeat="date in dates"
+                | {{date.format('{MM}/{dd}/{yyyy}')}}
+              th style='width: auto !important;' colspan="1" rowspan="1"
+                | Total
+              th style='width: auto !important;' colspan="1" rowspan="1"
+                | %
+
+          tbody
+            tr.info ng-repeat-start='methodology in data'
+              td
+                | {{methodology.name.titleize()}}
+              td ng-repeat='day in days'
+              td
+                | {{totalInGroup(methodology.items)}}
+              td
+            tr ng-repeat-end='' ng-repeat='(key, values) in methodology.items'
+              td
+                | {{key.titleize()}}
+              td ng-repeat='value in values track by $index'
+                | {{value}}
+              td
+                | {{values.sum()}}
+              td
+                | {{percentage(values.sum(), totalInGroup(methodology.items)) | percentage:2}}
+
+        table.hidden.display.table.table-bordered.valign.dataTable.fixedHeader-floating.float-header role="grid" style=("table-layout: fixed;") width="100%" ng-show='data.length'
+          thead
+            tr role="row"
+              th
+                | {{params.target.titleize()}}
+              th ng-repeat="day in days"
+                | {{day}}
+              th
+              th
+            tr
+              th Date
+              th ng-repeat="date in dates"
+                | {{date.format('{MM}/{dd}/{yyyy}')}}
+              th style='width: auto !important;' colspan="1" rowspan="1"
+                | Total
+              th style='width: auto !important;' colspan="1" rowspan="1"
+                | %
+
+javascript:
+  $(document).ready(function(){
+    fixedHeaders('-20px');
+
+    $('#export').on('click', function() {
+      $('#date_range').val($('#period').val());
+      $('#export-methodology').click();
+    })
+  });
